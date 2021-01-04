@@ -10,6 +10,9 @@ public:
     CustomFile();
     CustomFile(int index, QString filePath, QString currentText);
     CustomFile(int index, QString filePath, QString fileName, QString currentText);
+
+    void setFileNameWithFilePath(QString filePath);
+
     int index;
     QString fileName;
     QString filePath;

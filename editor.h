@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QTextEdit>
+#include <QPair>
 
 #include "customvector.h"
 #include "customfile.h"
@@ -24,6 +25,7 @@ private slots:
     void newFile();
     void openFile();
     void saveFile();
+    void saveFileAs();
     void setupFileBar();
 
     void swapOpenFile(int fileToChangeToIndex);
@@ -32,10 +34,15 @@ private:
     void setupEditor();
     void setupMenuBars();
 
+    QPair<int, QAction*> findOpenFileAction(int index);
+
+    const QString NEW_FILE_NAME = "*untitled";
     QTextEdit *editor;
     Highlighter *highlighter;
     CustomVector<CustomFile> openFiles;
+    QVector<QPair<int, QAction*>> openFilesActions;
     QToolBar *toolBar;
-    int currentOpenFileIndex=0;
+
+    int currentOpenFileIndex=-1;
 };
 #endif // EDITOR_H
