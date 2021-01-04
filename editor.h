@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QTextEdit>
 
+#include "customvector.h"
+#include "customfile.h"
 #include "highlighter.h"
 
 class Editor : public QMainWindow
@@ -19,7 +21,12 @@ public slots:
     //void openFile(const QString &path = QString());
 
 private slots:
+    void newFile();
     void openFile();
+    void saveFile();
+    void setupFileBar();
+
+    void swapOpenFile(int fileToChangeToIndex);
 
 private:
     void setupEditor();
@@ -27,5 +34,8 @@ private:
 
     QTextEdit *editor;
     Highlighter *highlighter;
+    CustomVector<CustomFile> openFiles;
+    QToolBar *toolBar;
+    int currentOpenFileIndex=0;
 };
 #endif // EDITOR_H
