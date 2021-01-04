@@ -61,20 +61,50 @@ void Editor::setupMenuBars()
     QAction *newFileAction = fileMenu->addAction("&New File");
     QAction *openFileAction = fileMenu->addAction("&Open File");
     QAction *saveFileAction = fileMenu->addAction("&Save File");
+    QAction *saveFileAsAction = fileMenu->addAction("&Save File As...");
 
     newFileAction->setShortcut(QKeySequence::New);
     openFileAction->setShortcut(QKeySequence::Open);
     saveFileAction->setShortcut(QKeySequence::Save);
+    saveFileAsAction->setShortcut(QKeySequence::SaveAs);
 
     connect(newFileAction, &QAction::triggered, this, &Editor::newFile);
     connect(openFileAction, &QAction::triggered, this, &Editor::openFile);
     connect(saveFileAction, &QAction::triggered, this, &Editor::saveFile);
+    connect(saveFileAsAction, &QAction::triggered, this, &Editor::saveFileAs);
+}
+
+QPair<int, QAction*> Editor::findOpenFileAction(int index)
+{
+    for (QPair<int, QAction*> pair : openFilesActions) {
+        if (pair.first == index) {
+            return pair;
+        }
+    }
+    throw _exception();
 }
 
 void Editor::newFile()
 {
-    editor->setPlainText("");
-    // TODO
+    if (currentOpenFileIndex != -1) {
+        CustomFile *oldFile = openFiles.find(currentOpenFileIndex);
+        oldFile->currentText = editor->toPlainText();
+    }
+
+    CustomFile newFile = CustomFile(rand() % INT_MAX, NEW_FILE_NAME, NEW_FILE_NAME, "");
+
+    openFiles.append(newFile);
+
+    QPair<int, QAction*> newToolbar;
+    newToolbar.first = newFile.index;
+    newToolbar.second = toolBar->addAction(newFile.fileName);
+    connect(newToolbar.second, &QAction::triggered, this, [=](){ swapOpenFile(newFile.index); });
+    openFilesActions.append(newToolbar);
+    toolBar->addSeparator();
+
+    currentOpenFileIndex = newFile.index;
+
+    editor->setPlainText(newFile.currentText);
 }
 
 void Editor::openFile()
@@ -93,8 +123,11 @@ void Editor::openFile()
 
     currentOpenFileIndex = openedFile.index;
 
-    QAction *toolbarName = toolBar->addAction(openedFile.fileName);
-    connect(toolbarName, &QAction::triggered, this, [=](){ swapOpenFile(openedFile.index);qDebug() << openFiles.find(currentOpenFileIndex)->currentText; }); //swapOpenFile(openFiles.find(currentOpenFileIndex), openedFile);
+    QPair<int, QAction*> toolbarName;
+    toolbarName.first = openedFile.index;
+    toolbarName.second = toolBar->addAction(openedFile.fileName);
+    openFilesActions.append(toolbarName);
+    connect(toolbarName.second, &QAction::triggered, this, [=](){ swapOpenFile(openedFile.index); });
     toolBar->addSeparator();
 
     file.close();
@@ -102,10 +135,38 @@ void Editor::openFile()
 
 void Editor::saveFile()
 {
-    QFile file(openFiles.find(currentOpenFileIndex)->filePath);
+    CustomFile *fileToSave = openFiles.find(currentOpenFileIndex);
+    if (fileToSave->filePath == NEW_FILE_NAME) {
+        saveFileAs();
+        return;
+    }
+    QFile file(fileToSave->filePath);
     if (file.open(QFile::Text | QFile::WriteOnly)) {
         QTextStream out(&file);
         out << editor->toPlainText();
+    } else {
+        QMessageBox errorBox;
+        errorBox.setText("This file could not be saved.");
+        errorBox.exec();
+    }
+}
+
+void Editor::saveFileAs()
+{
+    CustomFile *fileToSave = openFiles.find(currentOpenFileIndex);
+    QUrl fileUrl = QFileDialog::getSaveFileUrl(this, tr("Save File As...", ""), tr("All Files (*)"));
+    QFile file(QString::fromStdString(fileUrl.toString().toStdString().substr(8)));
+    if (file.open(QFile::Text | QFile::WriteOnly)) {
+        file.write(editor->toPlainText().toUtf8());
+        fileToSave->filePath = fileUrl.toString();
+        fileToSave->setFileNameWithFilePath(fileUrl.toString());
+
+        toolBar->removeAction(findOpenFileAction(fileToSave->index).second);
+        QPair<int, QAction*> toolbarName;
+        toolbarName.first = fileToSave->index;
+        toolbarName.second = toolBar->addAction(fileToSave->fileName);
+        openFilesActions.append(toolbarName);
+        connect(toolbarName.second, &QAction::triggered, this, [=](){ swapOpenFile(fileToSave->index); });
     } else {
         QMessageBox errorBox;
         errorBox.setText("This file could not be saved.");
