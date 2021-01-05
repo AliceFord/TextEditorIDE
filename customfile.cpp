@@ -30,3 +30,14 @@ void CustomFile::setFileNameWithFilePath(QString filePath)
         }
     }
 }
+
+QString CustomFile::getEnding(QString fileName)
+{
+    int i;
+    for (i=fileName.length();i>0;i--) {
+        if (fileName[i] == '.') {
+            break;
+        }
+    }
+    return QString::fromStdString(fileName.toStdString().substr(i));
+}

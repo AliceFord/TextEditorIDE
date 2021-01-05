@@ -12,12 +12,18 @@ class Highlighter : public QSyntaxHighlighter
     Q_OBJECT
 
 public:
-    Highlighter(QTextDocument *parent = 0);
+    Highlighter(QTextDocument *parent = 0, int language = 0);
+    enum LANGUAGE {
+        CPP,
+        PYTHON
+    };
 
 protected:
     void highlightBlock(const QString &text) override;
 
 private:
+    void setHighlightingRulesCPP();
+    void setHighlightingRulesPython();
     struct HighlightingRule
     {
         QRegularExpression pattern;

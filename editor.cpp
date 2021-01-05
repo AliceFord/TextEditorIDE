@@ -7,7 +7,15 @@
 #include <QMessageBox>
 #include <QMenuBar>
 #include <QToolBar>
+#include <QDockWidget>
+#include <QTextEdit>
+#include <QProcess>
+#include <QTimer>
 
+#include <stdexcept>
+#include <string>
+#include <Windows.h>
+#include <WinBase.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -19,9 +27,12 @@ Editor::Editor(QWidget *parent)
     setupMenuBars();
     setupEditor();
     setupFileBar();
+    setupOutputConsole();
 
     setCentralWidget(editor);
-    setWindowTitle(tr("Syntax Highlighter"));
+    setWindowTitle(tr("Text Editor IDE"));
+
+    setGeometry(50, 50, 1000, 1000);
 }
 
 void Editor::setupEditor()
@@ -34,7 +45,7 @@ void Editor::setupEditor()
     editor = new QTextEdit;
     editor->setFont(font);
 
-    highlighter = new Highlighter(editor->document());
+    highlighter = new Highlighter(editor->document(), Highlighter::CPP);
 
     QFile file("C:/Users/olive/Desktop/Coding/After Da USB/Qt/TextEditorIDE/editor.h");
     if (file.open(QFile::ReadOnly | QFile::Text))
@@ -72,6 +83,29 @@ void Editor::setupMenuBars()
     connect(openFileAction, &QAction::triggered, this, &Editor::openFile);
     connect(saveFileAction, &QAction::triggered, this, &Editor::saveFile);
     connect(saveFileAsAction, &QAction::triggered, this, &Editor::saveFileAs);
+
+    QMenu *runMenu = menuBar()->addMenu("&Run");
+
+    QAction *runFile = runMenu->addAction("&Run");
+
+    runFile->setShortcut(QKeySequence("F5"));
+
+    connect(runFile, &QAction::triggered, this, &Editor::runFile);
+}
+
+void Editor::setupOutputConsole()
+{
+    QToolBar *secondaryToolbar = new QToolBar();
+    QAction *outputConsoleAction = secondaryToolbar->addAction("&1 Output");
+    outputConsoleAction->setShortcut(QKeySequence("Alt+1"));
+    addToolBar(Qt::BottomToolBarArea, secondaryToolbar);
+    QDockWidget *outputConsole = new QDockWidget(tr("Output"), this);
+    outputConsole->setAllowedAreas(Qt::BottomDockWidgetArea);
+    outputConsoleTextArea = new QTextEdit("", this);
+    outputConsole->setWidget(outputConsoleTextArea);
+    addDockWidget(Qt::BottomDockWidgetArea, outputConsole);
+
+    connect(outputConsoleAction, &QAction::triggered, this, [=](){ outputConsole->isHidden() ? outputConsole->show() : outputConsole->hide(); });
 }
 
 QPair<int, QAction*> Editor::findOpenFileAction(int index)
@@ -82,6 +116,19 @@ QPair<int, QAction*> Editor::findOpenFileAction(int index)
         }
     }
     throw _exception();
+}
+
+void Editor::runFile()
+{
+    saveFile();
+    CustomFile *file = openFiles.find(currentOpenFileIndex);
+
+    if (CustomFile::getEnding(file->fileName)==".py") {
+        QProcess consoleProcess;
+        consoleProcess.start("python \"" + file->filePath.toUtf8() + "\"");
+        consoleProcess.waitForFinished(-1);
+        outputConsoleTextArea->setText(QString::fromUtf8(consoleProcess.readAll()));
+    }
 }
 
 void Editor::newFile()

@@ -12,6 +12,7 @@ public:
     CustomFile(int index, QString filePath, QString fileName, QString currentText);
 
     void setFileNameWithFilePath(QString filePath);
+    static QString getEnding(QString fileName);
 
     int index;
     QString fileName;
