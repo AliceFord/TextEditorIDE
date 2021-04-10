@@ -13,7 +13,7 @@ class Highlighter : public QSyntaxHighlighter
 
 public:
     Highlighter(QTextDocument *parent = 0, int language = 0);
-    enum LANGUAGE {
+    enum Language {
         CPP,
         PYTHON
     };

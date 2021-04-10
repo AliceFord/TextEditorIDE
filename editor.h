@@ -6,6 +6,7 @@
 #include <QPair>
 #include <QProcess>
 
+#include "custompairvector.h"
 #include "customvector.h"
 #include "customfile.h"
 #include "highlighter.h"
@@ -27,12 +28,16 @@ private slots:
     void openFile();
     void saveFile();
     void saveFileAs();
+    void closeFile();
 
     void runFile();
 
     void setupFileBar();
 
     void swapOpenFile(int fileToChangeToIndex);
+
+protected:
+    void closeEvent(QCloseEvent *event);
 
 private:
     void setupEditor();
@@ -46,7 +51,7 @@ private:
     QTextEdit *editor;
     Highlighter *highlighter;
     CustomVector<CustomFile> openFiles;
-    QVector<QPair<int, QAction*>> openFilesActions;
+    CustomPairVector<QPair<int, QAction*>> openFilesActions;
     QToolBar *toolBar;
 
     QTextEdit *outputConsoleTextArea;
@@ -54,5 +59,7 @@ private:
     QProcess consoleProcess;
 
     int currentOpenFileIndex=-1;
+
+    std::map<std::string, Highlighter::Language> endingToLanguage = {{".py", Highlighter::PYTHON}, {".cpp", Highlighter::CPP}};
 };
 #endif // EDITOR_H

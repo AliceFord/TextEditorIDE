@@ -10,6 +10,7 @@ CONFIG += c++11
 
 SOURCES += \
     customfile.cpp \
+    custompairvector.cpp \
     customvector.cpp \
     highlighter.cpp \
     main.cpp \
@@ -17,6 +18,7 @@ SOURCES += \
 
 HEADERS += \
     customfile.h \
+    custompairvector.h \
     customvector.h \
     editor.h \
     highlighter.h

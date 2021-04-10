@@ -17,7 +17,6 @@ public:
         for (int i=0;i<this->length();i++)
             if ((*this)[i].index == index)
                 return &(*this)[i];
-        throw new _exception();
     }
 };
 

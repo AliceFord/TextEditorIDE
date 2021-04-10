@@ -11,6 +11,7 @@
 #include <QTextEdit>
 #include <QProcess>
 #include <QTimer>
+#include <QSettings>
 
 #include <stdexcept>
 #include <string>
@@ -46,11 +47,6 @@ void Editor::setupEditor()
     editor->setFont(font);
 
     highlighter = new Highlighter(editor->document(), Highlighter::CPP);
-
-    QFile file("C:/Users/olive/Desktop/Coding/After Da USB/Qt/TextEditorIDE/editor.h");
-    if (file.open(QFile::ReadOnly | QFile::Text))
-        editor->setPlainText(file.readAll());
-    file.close();
 }
 
 void Editor::swapOpenFile(int fileToChangeToIndex)
@@ -73,16 +69,20 @@ void Editor::setupMenuBars()
     QAction *openFileAction = fileMenu->addAction("&Open File");
     QAction *saveFileAction = fileMenu->addAction("&Save File");
     QAction *saveFileAsAction = fileMenu->addAction("&Save File As...");
+    fileMenu->addSeparator();
+    QAction *closeFileAction = fileMenu->addAction("&Close File");
 
     newFileAction->setShortcut(QKeySequence::New);
     openFileAction->setShortcut(QKeySequence::Open);
     saveFileAction->setShortcut(QKeySequence::Save);
     saveFileAsAction->setShortcut(QKeySequence::SaveAs);
+    closeFileAction->setShortcut(QKeySequence::Close);
 
     connect(newFileAction, &QAction::triggered, this, &Editor::newFile);
     connect(openFileAction, &QAction::triggered, this, &Editor::openFile);
     connect(saveFileAction, &QAction::triggered, this, &Editor::saveFile);
     connect(saveFileAsAction, &QAction::triggered, this, &Editor::saveFileAs);
+    connect(closeFileAction, &QAction::triggered, this, &Editor::closeFile);
 
     QMenu *runMenu = menuBar()->addMenu("&Run");
 
@@ -115,7 +115,6 @@ QPair<int, QAction*> Editor::findOpenFileAction(int index)
             return pair;
         }
     }
-    throw _exception();
 }
 
 void Editor::runFile()
@@ -157,6 +156,13 @@ void Editor::newFile()
 void Editor::openFile()
 {
     QString fileLocation = QFileDialog::getOpenFileName(this, tr("Open File"), "C:/Users/desktop/debug", tr("Any Files (*.*)"));
+
+    if (CustomFile::getEnding(fileLocation) == ".py") {
+        delete highlighter;
+        highlighter = new Highlighter(editor->document(), Highlighter::PYTHON);
+    }
+
+
     QFile file(fileLocation);
     if (file.open(QFile::Text | QFile::ReadOnly))
         editor->setPlainText(file.readAll());
@@ -219,4 +225,24 @@ void Editor::saveFileAs()
         errorBox.setText("This file could not be saved.");
         errorBox.exec();
     }
+}
+
+void Editor::closeFile()
+{
+    std::string saveText = "Would you like to save \"" + openFiles.find(currentOpenFileIndex)->fileName.toStdString() + "\"?";
+    QMessageBox::StandardButton reply = QMessageBox::question(this, tr(saveText.c_str()), tr(saveText.c_str()));
+    if (reply == QMessageBox::Yes) {
+        saveFile();
+    }
+    toolBar->removeAction(openFilesActions.find(currentOpenFileIndex));
+    editor->clear();
+}
+
+void Editor::closeEvent(QCloseEvent *event)
+{
+    for (QPair<int, QAction*> pair : openFilesActions) {
+        currentOpenFileIndex = pair.first;
+        closeFile();
+    }
+    QMainWindow::closeEvent(event);
 }

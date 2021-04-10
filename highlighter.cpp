@@ -1,5 +1,8 @@
 #include "highlighter.h"
 
+#include <QColor>
+#include <QDebug>
+
 Highlighter::Highlighter(QTextDocument *parent, int language)
     : QSyntaxHighlighter(parent)
 {
@@ -15,7 +18,44 @@ Highlighter::Highlighter(QTextDocument *parent, int language)
 
 void Highlighter::setHighlightingRulesPython()
 {
+    HighlightingRule rule;
 
+    keywordFormat.setForeground(QColor(255, 165, 0));
+    keywordFormat.setFontWeight(QFont::Bold);
+    const QString keywordPatterns[] {
+        QStringLiteral("\\bdef\\b")
+    };
+    for (const QString &pattern : keywordPatterns) {
+        rule.pattern = QRegularExpression(pattern);
+        rule.format = keywordFormat;
+        highlightingRules.append(rule);
+    }
+    classFormat.setFontWeight(QFont::Bold);
+    classFormat.setForeground(Qt::darkMagenta);
+    rule.pattern = QRegularExpression(QStringLiteral("\\bQ[A-Za-z]+\\b"));
+    rule.format = classFormat;
+    highlightingRules.append(rule);
+
+    quotationFormat.setForeground(Qt::darkGreen);
+    rule.pattern = QRegularExpression(QStringLiteral("\".*\""));
+    rule.format = quotationFormat;
+    highlightingRules.append(rule);
+
+    functionFormat.setFontItalic(true);
+    functionFormat.setForeground(Qt::blue);
+    rule.pattern = QRegularExpression(QStringLiteral("\\b[A-Za-z0-9_]+(?=\\()"));
+    rule.format = functionFormat;
+    highlightingRules.append(rule);
+
+    singleLineCommentFormat.setForeground(Qt::red);
+    rule.pattern = QRegularExpression(QStringLiteral("//[^\n]*"));
+    rule.format = singleLineCommentFormat;
+    highlightingRules.append(rule);
+
+    multiLineCommentFormat.setForeground(Qt::red);
+
+    commentStartExpression = QRegularExpression(QStringLiteral("/\\*"));
+    commentEndExpression = QRegularExpression(QStringLiteral("\\*/"));
 }
 
 void Highlighter::setHighlightingRulesCPP()
