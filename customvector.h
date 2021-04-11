@@ -18,6 +18,16 @@ public:
             if ((*this)[i].index == index)
                 return &(*this)[i];
     }
+
+    void removeByNumber(int index)
+    {
+        for (int i=0;i<this->length();i++) {
+            if ((*this)[i].index == index) {
+                (*this).remove(i);
+                return;
+            }
+        }
+    }
 };
 
 #endif // CUSTOMVECTOR_H

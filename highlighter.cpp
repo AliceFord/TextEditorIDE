@@ -20,10 +20,44 @@ void Highlighter::setHighlightingRulesPython()
 {
     HighlightingRule rule;
 
-    keywordFormat.setForeground(QColor(255, 165, 0));
+    keywordFormat.setForeground(QColor(167, 29, 93));
     keywordFormat.setFontWeight(QFont::Bold);
     const QString keywordPatterns[] {
-        QStringLiteral("\\bdef\\b")
+        QStringLiteral("\\bFalse\\b"),
+        QStringLiteral("\\bNone\\b"),
+        QStringLiteral("\\bTrue\\b"),
+        QStringLiteral("\\band\\b"),
+        QStringLiteral("\\bas\\b"),
+        QStringLiteral("\\bassert\\b"),
+        QStringLiteral("\\basync\\b"),
+        QStringLiteral("\\bawait\\b"),
+        QStringLiteral("\\bbreak\\b"),
+        QStringLiteral("\\bclass\\b"),
+        QStringLiteral("\\bcontinue\\b"),
+        QStringLiteral("\\bdef\\b"),
+        QStringLiteral("\\bdel\\b"),
+        QStringLiteral("\\belif\\b"),
+        QStringLiteral("\\belse\\b"),
+        QStringLiteral("\\bexcept\\b"),
+        QStringLiteral("\\bfinally\\b"),
+        QStringLiteral("\\bfor\\b"),
+        QStringLiteral("\\bfrom\\b"),
+        QStringLiteral("\\bglobal\\b"),
+        QStringLiteral("\\bif\\b"),
+        QStringLiteral("\\bimport\\b"),
+        QStringLiteral("\\bin\\b"),
+        QStringLiteral("\\bis\\b"),
+        QStringLiteral("\\blambda\\b"),
+        QStringLiteral("\\bnonlocal\\b"),
+        QStringLiteral("\\bnot\\b"),
+        QStringLiteral("\\bor\\b"),
+        QStringLiteral("\\bpass\\b"),
+        QStringLiteral("\\braise\\b"),
+        QStringLiteral("\\breturn\\b"),
+        QStringLiteral("\\btry\\b"),
+        QStringLiteral("\\bwhile\\b"),
+        QStringLiteral("\\bwith\\b"),
+        QStringLiteral("\\byield\\b")
     };
     for (const QString &pattern : keywordPatterns) {
         rule.pattern = QRegularExpression(pattern);
@@ -41,21 +75,20 @@ void Highlighter::setHighlightingRulesPython()
     rule.format = quotationFormat;
     highlightingRules.append(rule);
 
-    functionFormat.setFontItalic(true);
-    functionFormat.setForeground(Qt::blue);
+    functionFormat.setForeground(QColor(0, 134, 179));
     rule.pattern = QRegularExpression(QStringLiteral("\\b[A-Za-z0-9_]+(?=\\()"));
     rule.format = functionFormat;
     highlightingRules.append(rule);
 
-    singleLineCommentFormat.setForeground(Qt::red);
-    rule.pattern = QRegularExpression(QStringLiteral("//[^\n]*"));
+    singleLineCommentFormat.setForeground(Qt::gray);
+    rule.pattern = QRegularExpression(QStringLiteral("#[^\n]*"));
     rule.format = singleLineCommentFormat;
     highlightingRules.append(rule);
 
-    multiLineCommentFormat.setForeground(Qt::red);
+    multiLineCommentFormat.setForeground(Qt::gray);
 
-    commentStartExpression = QRegularExpression(QStringLiteral("/\\*"));
-    commentEndExpression = QRegularExpression(QStringLiteral("\\*/"));
+    commentStartExpression = QRegularExpression(QStringLiteral("\"\"\""));
+    commentEndExpression = QRegularExpression(QStringLiteral("\"\"\""));
 }
 
 void Highlighter::setHighlightingRulesCPP()

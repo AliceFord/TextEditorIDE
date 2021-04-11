@@ -21,12 +21,26 @@ CustomFile::CustomFile(int index, QString filePath, QString fileName, QString cu
     this->currentText = currentText;
 };
 
-void CustomFile::setFileNameWithFilePath(QString filePath)
+void CustomFile::updateFilenameFromFilepath()
 {
-    for (int i=filePath.length();i>0;i--) {
-        if (filePath[i].toLatin1()=='/') {
-            this->fileName = QString::fromStdString(filePath.toStdString().substr(i+1));
+    setFileNameWithFilePath(filePath);
+}
+
+void CustomFile::setFileNameWithFilePath(QString path)
+{
+    for (int i=path.length();i>0;i--) {
+        if (path[i].toLatin1()=='/') {
+            this->fileName = QString::fromStdString(path.toStdString().substr(i+1));
             break;
+        }
+    }
+}
+
+QString CustomFile::getFileNameWithFilePath(QString path)
+{
+    for (int i=path.length();i>0;i--) {
+        if (path[i].toLatin1()=='/') {
+            return QString::fromStdString(path.toStdString().substr(i+1));
         }
     }
 }

@@ -28,7 +28,7 @@ Editor::Editor(QWidget *parent)
     setupMenuBars();
     setupEditor();
     setupFileBar();
-    setupOutputConsole();
+    setupDocks();
 
     setCentralWidget(editor);
     setWindowTitle(tr("Text Editor IDE"));
@@ -45,6 +45,8 @@ void Editor::setupEditor()
 
     editor = new QTextEdit;
     editor->setFont(font);
+
+    connect(editor, &QTextEdit::textChanged, this, &Editor::editorTextChanged);
 
     highlighter = new Highlighter(editor->document(), Highlighter::CPP);
 }
@@ -87,15 +89,17 @@ void Editor::setupMenuBars()
     QMenu *runMenu = menuBar()->addMenu("&Run");
 
     QAction *runFile = runMenu->addAction("&Run");
+    QAction *liveHTMLView = runMenu->addAction("&Live HTML View");
 
     runFile->setShortcut(QKeySequence("F5"));
+    liveHTMLView->setShortcut(QKeySequence("Ctrl+M"));
 
     connect(runFile, &QAction::triggered, this, &Editor::runFile);
+    connect(liveHTMLView, &QAction::triggered, this, &Editor::toggleLiveHTMLView);
 }
 
-void Editor::setupOutputConsole()
+void Editor::setupDocks()
 {
-    QToolBar *secondaryToolbar = new QToolBar();
     QAction *outputConsoleAction = secondaryToolbar->addAction("&1 Output");
     outputConsoleAction->setShortcut(QKeySequence("Alt+1"));
     addToolBar(Qt::BottomToolBarArea, secondaryToolbar);
@@ -106,13 +110,28 @@ void Editor::setupOutputConsole()
     addDockWidget(Qt::BottomDockWidgetArea, outputConsole);
 
     connect(outputConsoleAction, &QAction::triggered, this, [=](){ outputConsole->isHidden() ? outputConsole->show() : outputConsole->hide(); });
+
+    QAction *liveHTMLViewAction = secondaryToolbar->addAction("&2 Live HTML View");
+    liveHTMLViewAction->setShortcut(QKeySequence("Alt+2"));
+    liveHTMLView = new QDockWidget(tr("Live HTML View"), this);
+    liveHTMLView->setAllowedAreas(Qt::RightDockWidgetArea);
+    liveHTMLViewWidget = new QTextBrowser(this);
+    liveHTMLViewWidget->setHtml("");
+    liveHTMLView->setWidget(liveHTMLViewWidget);
+    liveHTMLView->hide();
+    addDockWidget(Qt::RightDockWidgetArea, liveHTMLView);
+
+    connect(liveHTMLViewAction, &QAction::triggered, this, [=](){ liveHTMLView->isHidden() ? liveHTMLView->show() : liveHTMLView->hide(); });
 }
 
-QPair<int, QAction*> Editor::findOpenFileAction(int index)
+QPair<int, QAction*> Editor::findOpenFileAction(int index, bool second)
 {
     for (QPair<int, QAction*> pair : openFilesActions) {
         if (pair.first == index) {
-            return pair;
+            if (!second)
+                return pair;
+            else
+                second = false;
         }
     }
 }
@@ -128,6 +147,49 @@ void Editor::runFile()
         consoleProcess.waitForFinished(-1);
         outputConsoleTextArea->setText(QString::fromUtf8(consoleProcess.readAll()));
     }
+}
+
+void Editor::toggleLiveHTMLView()
+{
+    liveHTMLView->isHidden() ? liveHTMLView->show() : liveHTMLView->hide();
+}
+
+void Editor::editorTextChanged()
+{
+    if (currentOpenFileIndex != -1) {
+        CustomFile *oldFile = openFiles.find(currentOpenFileIndex);
+        if (oldFile->isSaved) {
+            oldFile->isSaved = false;
+            renameFile(oldFile, oldFile->fileName + "*");
+
+        }
+    }
+
+    if (!liveHTMLView->isHidden()) {
+        liveHTMLViewWidget->setHtml(editor->toPlainText());
+    }
+}
+
+void Editor::renameFile(CustomFile *file, QString newName)
+{
+    QPair<int, QAction*> before = findOpenFileAction(file->index);
+    QPair<int, QAction*> toolbarName;
+    toolbarName.first = rand() % INT_MAX;
+    toolbarName.second = new QAction(newName);
+    toolBar->insertAction(before.second, toolbarName.second);
+
+    CustomFile newFile = *file;
+    newFile.index = toolbarName.first;
+
+    connect(toolbarName.second, &QAction::triggered, this, [=](){ swapOpenFile(toolbarName.first); });
+
+    QPair<int, QAction*> deletedAction = openFilesActions.removeByNumber(before.first);
+    openFiles.removeByNumber(before.first);
+
+    openFilesActions.append(toolbarName);
+    openFiles.append(newFile);
+    toolBar->removeAction(deletedAction.second);
+    currentOpenFileIndex = toolbarName.first;
 }
 
 void Editor::newFile()
@@ -155,7 +217,7 @@ void Editor::newFile()
 
 void Editor::openFile()
 {
-    QString fileLocation = QFileDialog::getOpenFileName(this, tr("Open File"), "C:/Users/desktop/debug", tr("Any Files (*.*)"));
+    QString fileLocation = QFileDialog::getOpenFileName(this, tr("Open File"), "C:\\Users\\olive\\Desktop\\debug", tr("Any Files (*.*)"));
 
     if (CustomFile::getEnding(fileLocation) == ".py") {
         delete highlighter;
@@ -189,18 +251,23 @@ void Editor::openFile()
 void Editor::saveFile()
 {
     CustomFile *fileToSave = openFiles.find(currentOpenFileIndex);
-    if (fileToSave->filePath == NEW_FILE_NAME) {
-        saveFileAs();
-        return;
-    }
-    QFile file(fileToSave->filePath);
-    if (file.open(QFile::Text | QFile::WriteOnly)) {
-        QTextStream out(&file);
-        out << editor->toPlainText();
-    } else {
-        QMessageBox errorBox;
-        errorBox.setText("This file could not be saved.");
-        errorBox.exec();
+    if (!fileToSave->isSaved) {
+        if (fileToSave->filePath == NEW_FILE_NAME) {
+            saveFileAs();
+            return;
+        }
+        fileToSave->updateFilenameFromFilepath();
+        QFile file(fileToSave->filePath);
+        if (file.open(QFile::Text | QFile::WriteOnly)) {
+            QTextStream out(&file);
+            out << editor->toPlainText();
+            fileToSave->isSaved = true;
+            renameFile(fileToSave, fileToSave->fileName);
+        } else {
+            QMessageBox errorBox;
+            errorBox.setText("This file could not be saved.");
+            errorBox.exec();
+        }
     }
 }
 
@@ -211,15 +278,9 @@ void Editor::saveFileAs()
     QFile file(QString::fromStdString(fileUrl.toString().toStdString().substr(8)));
     if (file.open(QFile::Text | QFile::WriteOnly)) {
         file.write(editor->toPlainText().toUtf8());
-        fileToSave->filePath = fileUrl.toString();
-        fileToSave->setFileNameWithFilePath(fileUrl.toString());
-
-        toolBar->removeAction(findOpenFileAction(fileToSave->index).second);
-        QPair<int, QAction*> toolbarName;
-        toolbarName.first = fileToSave->index;
-        toolbarName.second = toolBar->addAction(fileToSave->fileName);
-        openFilesActions.append(toolbarName);
-        connect(toolbarName.second, &QAction::triggered, this, [=](){ swapOpenFile(fileToSave->index); });
+        fileToSave->filePath = fileUrl.toLocalFile();
+        qDebug() << CustomFile::getFileNameWithFilePath(fileUrl.toLocalFile());
+        renameFile(fileToSave, CustomFile::getFileNameWithFilePath(fileUrl.toLocalFile()));
     } else {
         QMessageBox errorBox;
         errorBox.setText("This file could not be saved.");
@@ -229,13 +290,17 @@ void Editor::saveFileAs()
 
 void Editor::closeFile()
 {
-    std::string saveText = "Would you like to save \"" + openFiles.find(currentOpenFileIndex)->fileName.toStdString() + "\"?";
-    QMessageBox::StandardButton reply = QMessageBox::question(this, tr(saveText.c_str()), tr(saveText.c_str()));
-    if (reply == QMessageBox::Yes) {
-        saveFile();
+    if (!openFiles.find(currentOpenFileIndex)->isSaved) {
+        std::string saveText = "Would you like to save \"" + openFiles.find(currentOpenFileIndex)->fileName.toStdString() + "\"?";
+        QMessageBox::StandardButton reply = QMessageBox::question(this, tr(saveText.c_str()), tr(saveText.c_str()));
+        if (reply == QMessageBox::Yes) {
+            saveFile();
+        }
     }
     toolBar->removeAction(openFilesActions.find(currentOpenFileIndex));
     editor->clear();
+    openFilesActions.removeByNumber(openFiles.find(currentOpenFileIndex)->index);
+    openFiles.removeByNumber(openFiles.find(currentOpenFileIndex)->index);
 }
 
 void Editor::closeEvent(QCloseEvent *event)

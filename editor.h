@@ -5,6 +5,8 @@
 #include <QTextEdit>
 #include <QPair>
 #include <QProcess>
+#include <QToolBar>
+#include <QTextBrowser>
 
 #include "custompairvector.h"
 #include "customvector.h"
@@ -31,6 +33,8 @@ private slots:
     void closeFile();
 
     void runFile();
+    void toggleLiveHTMLView();
+    void editorTextChanged();
 
     void setupFileBar();
 
@@ -43,9 +47,12 @@ private:
     void setupEditor();
     void setupMenuBars();
 
-    void setupOutputConsole();
+    void setupDocks();
+    void renameFile(CustomFile *file, QString newName);
 
-    QPair<int, QAction*> findOpenFileAction(int index);
+    QToolBar *secondaryToolbar = new QToolBar();
+
+    QPair<int, QAction*> findOpenFileAction(int index, bool second=false);
 
     const QString NEW_FILE_NAME = "*untitled";
     QTextEdit *editor;
@@ -55,6 +62,8 @@ private:
     QToolBar *toolBar;
 
     QTextEdit *outputConsoleTextArea;
+    QTextBrowser *liveHTMLViewWidget;
+    QDockWidget *liveHTMLView;
 
     QProcess consoleProcess;
 
