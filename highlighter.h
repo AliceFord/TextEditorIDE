@@ -30,7 +30,7 @@ public:
         this->replaceTerm = replaceTerm;
     }
 
-    QPair<QRegularExpressionMatch, QTextCharFormat> cycleSearch();
+    QPair<QRegularExpressionMatch, QTextCharFormat> cycleSearch(bool cycle);
 
 protected:
     void highlightBlock(const QString &text) override;

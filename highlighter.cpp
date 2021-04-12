@@ -28,7 +28,7 @@ Highlighter::Highlighter(QTextDocument *parent, int language, QString searchTerm
     highlightingRules.append(rule);
 }
 
-QPair<QRegularExpressionMatch, QTextCharFormat> Highlighter::cycleSearch()
+QPair<QRegularExpressionMatch, QTextCharFormat> Highlighter::cycleSearch(bool cycle)
 {
     HighlightingRule rule;
     currentSearchTermFormat.setBackground(Qt::yellow);
@@ -38,32 +38,37 @@ QPair<QRegularExpressionMatch, QTextCharFormat> Highlighter::cycleSearch()
     counter = 0;
     bool hasFound = false;
     QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(this->parent->toPlainText());
-    qDebug() << this->parent->toPlainText();
     while (matchIterator.hasNext()) {
         if (currentFoundItem == -1) {
             currentFoundItem = 1;
         }
         if (currentFoundItem <= ++counter) {
             hasFound = true;
-            currentFoundItem = counter+1;
+            if (!cycle)
+                currentFoundItem = counter+1;
+
             QRegularExpressionMatch match = matchIterator.next();
             foundItem.first = match;
             foundItem.second = rule.format;
             break;
         } else {
-            if (currentFoundItem <= counter+1 && replaceTerm != DEFAULT_REPLACE_TEXT) {
-                currentFoundItem--;
-                counter--;
-                HighlightingRule rule2;
-                currentSearchTermFormat.setBackground(Qt::blue);
-                rule2.pattern = QRegularExpression(QStringLiteral("%1").arg(searchTerm));
-                rule2.format = currentSearchTermFormat;
+            if (cycle) {
+                if (currentFoundItem <= counter+1 && replaceTerm != DEFAULT_REPLACE_TEXT) {
+                    currentFoundItem--;
+                    counter--;
+                    HighlightingRule rule2;
+                    currentSearchTermFormat.setBackground(Qt::blue);
+                    rule2.pattern = QRegularExpression(QStringLiteral("%1").arg(searchTerm));
+                    rule2.format = currentSearchTermFormat;
 
-                QRegularExpressionMatch match = matchIterator.next();
-                replaceItem.first = match;
-                replaceItem.second = rule2.format;
+                    QRegularExpressionMatch match = matchIterator.next();
+                    replaceItem.first = match;
+                    replaceItem.second = rule2.format;
+                } else {
+                    QRegularExpressionMatch dump = matchIterator.next();
+                }
             } else {
-                QRegularExpressionMatch dump = matchIterator.next();
+                matchIterator.next();
             }
         }
     }

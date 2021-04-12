@@ -81,11 +81,11 @@ void FindAndReplaceWindow::replaceEntryFinished()
 void FindAndReplaceWindow::dataEntryFinished()
 {
     if (previousSearchTerm == lineEdit->text()) {
-        QPair<QRegularExpressionMatch, QTextCharFormat> replace = highlighter->cycleSearch();
+        QPair<QRegularExpressionMatch, QTextCharFormat> replace = highlighter->cycleSearch(true);
         if (replace.first.capturedStart() != -1) {
             editor->replaceText(replace.first.capturedStart(), replace.first.capturedLength(), replaceLineEdit->text());
         }
-        qDebug() << replace.first.capturedStart();
+        highlighter->cycleSearch(false);
     } else {
         previousSearchTerm = lineEdit->text();
         QTextDocument *doc = highlighter->getParent();
