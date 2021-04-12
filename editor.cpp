@@ -1,6 +1,7 @@
 ﻿#include "editor.h"
 #include "highlighter.h"
 #include "customfile.h"
+#include "findandreplace.h"
 
 #include <QDebug>
 #include <QFileDialog>
@@ -67,24 +68,32 @@ void Editor::setupMenuBars()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
 
-    QAction *newFileAction = fileMenu->addAction("&New File");
-    QAction *openFileAction = fileMenu->addAction("&Open File");
-    QAction *saveFileAction = fileMenu->addAction("&Save File");
-    QAction *saveFileAsAction = fileMenu->addAction("&Save File As...");
+    QAction *newFileAction = fileMenu->addAction(tr("&New File"));
+    QAction *openFileAction = fileMenu->addAction(tr("&Open File"));
+    QAction *saveFileAction = fileMenu->addAction(tr("&Save File"));
+    QAction *saveFileAsAction = fileMenu->addAction(tr("&Save File As..."));
     fileMenu->addSeparator();
-    QAction *closeFileAction = fileMenu->addAction("&Close File");
+    QAction *closeFileAction = fileMenu->addAction(tr("&Close File"));
 
     newFileAction->setShortcut(QKeySequence::New);
     openFileAction->setShortcut(QKeySequence::Open);
     saveFileAction->setShortcut(QKeySequence::Save);
     saveFileAsAction->setShortcut(QKeySequence::SaveAs);
-    closeFileAction->setShortcut(QKeySequence::Close);
+    //closeFileAction->setShortcut(QKeySequence::Close);
 
     connect(newFileAction, &QAction::triggered, this, &Editor::newFile);
     connect(openFileAction, &QAction::triggered, this, &Editor::openFile);
     connect(saveFileAction, &QAction::triggered, this, &Editor::saveFile);
     connect(saveFileAsAction, &QAction::triggered, this, &Editor::saveFileAs);
     connect(closeFileAction, &QAction::triggered, this, &Editor::closeFile);
+
+    QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
+
+    QAction *findAndReplaceAction = editMenu->addAction(tr("&Find and Replace"));
+
+    findAndReplaceAction->setShortcut(QKeySequence::Find);
+
+    connect(findAndReplaceAction, &QAction::triggered, this, &Editor::findAndReplace);
 
     QMenu *runMenu = menuBar()->addMenu("&Run");
 
@@ -96,6 +105,12 @@ void Editor::setupMenuBars()
 
     connect(runFile, &QAction::triggered, this, &Editor::runFile);
     connect(liveHTMLView, &QAction::triggered, this, &Editor::toggleLiveHTMLView);
+}
+
+void Editor::findAndReplace()
+{
+    FindAndReplaceWindow *window = new FindAndReplaceWindow(this, highlighter);
+    window->show();
 }
 
 void Editor::setupDocks()
@@ -310,4 +325,10 @@ void Editor::closeEvent(QCloseEvent *event)
         closeFile();
     }
     QMainWindow::closeEvent(event);
+}
+
+void Editor::replaceText(int startIndex, int length, QString replaceText)
+{
+    QString text = editor->toPlainText();
+    editor->setText(text.replace(startIndex, length, replaceText));
 }

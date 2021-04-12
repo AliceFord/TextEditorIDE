@@ -20,6 +20,8 @@ class Editor : public QMainWindow
 public:
     Editor(QWidget *parent = 0);
 
+    void replaceText(int startIndex, int length, QString replaceText);
+
 public slots:
     //void about();
     //void newFile();
@@ -31,6 +33,8 @@ private slots:
     void saveFile();
     void saveFileAs();
     void closeFile();
+
+    void findAndReplace();
 
     void runFile();
     void toggleLiveHTMLView();

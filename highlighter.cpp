@@ -3,9 +3,14 @@
 #include <QColor>
 #include <QDebug>
 
-Highlighter::Highlighter(QTextDocument *parent, int language)
+Highlighter::Highlighter(QTextDocument *parent, int language, QString searchTerm, QString replaceTerm)
     : QSyntaxHighlighter(parent)
 {
+    this->replaceTerm = replaceTerm;
+    this->parent = parent;
+    this->language = language;
+    this->searchTerm = searchTerm;
+
     switch (language) {
     case CPP:
         setHighlightingRulesCPP();
@@ -14,12 +19,66 @@ Highlighter::Highlighter(QTextDocument *parent, int language)
         setHighlightingRulesPython();
         break;
     }
+
+    HighlightingRule rule;
+
+    searchTermFormat.setBackground(QColor(155, 255, 155));
+    rule.pattern = QRegularExpression(QStringLiteral("%1").arg(searchTerm));
+    rule.format = searchTermFormat;
+    highlightingRules.append(rule);
+}
+
+QPair<QRegularExpressionMatch, QTextCharFormat> Highlighter::cycleSearch()
+{
+    HighlightingRule rule;
+    currentSearchTermFormat.setBackground(Qt::yellow);
+    rule.pattern = QRegularExpression(QStringLiteral("%1").arg(searchTerm));
+    rule.format = currentSearchTermFormat;
+
+    counter = 0;
+    bool hasFound = false;
+    QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(this->parent->toPlainText());
+    qDebug() << this->parent->toPlainText();
+    while (matchIterator.hasNext()) {
+        if (currentFoundItem == -1) {
+            currentFoundItem = 1;
+        }
+        if (currentFoundItem <= ++counter) {
+            hasFound = true;
+            currentFoundItem = counter+1;
+            QRegularExpressionMatch match = matchIterator.next();
+            foundItem.first = match;
+            foundItem.second = rule.format;
+            break;
+        } else {
+            if (currentFoundItem <= counter+1 && replaceTerm != DEFAULT_REPLACE_TEXT) {
+                currentFoundItem--;
+                counter--;
+                HighlightingRule rule2;
+                currentSearchTermFormat.setBackground(Qt::blue);
+                rule2.pattern = QRegularExpression(QStringLiteral("%1").arg(searchTerm));
+                rule2.format = currentSearchTermFormat;
+
+                QRegularExpressionMatch match = matchIterator.next();
+                replaceItem.first = match;
+                replaceItem.second = rule2.format;
+            } else {
+                QRegularExpressionMatch dump = matchIterator.next();
+            }
+        }
+    }
+    if (!hasFound){
+        currentFoundItem = -1;
+    }
+
+    rehighlight();
+
+    return replaceItem;
 }
 
 void Highlighter::setHighlightingRulesPython()
 {
     HighlightingRule rule;
-
     keywordFormat.setForeground(QColor(167, 29, 93));
     keywordFormat.setFontWeight(QFont::Bold);
     const QString keywordPatterns[] {
@@ -151,6 +210,15 @@ void Highlighter::highlightBlock(const QString &text)
             setFormat(match.capturedStart(), match.capturedLength(), rule.format);
         }
     }
+    if (currentFoundItem != -1) {
+        setFormat(foundItem.first.capturedStart(), foundItem.first.capturedLength(), foundItem.second);
+    }
+//    if (replaceTerm != DEFAULT_REPLACE_TEXT && currentFoundItem > 0) {
+
+//        setFormat(replaceItem.first.capturedStart(), replaceItem.first.capturedLength(), replaceItem.second);
+//    }
+
+
     setCurrentBlockState(0);
     int startIndex = 0;
     if (previousBlockState() != 1)

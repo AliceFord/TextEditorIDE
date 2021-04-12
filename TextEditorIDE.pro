@@ -12,6 +12,7 @@ SOURCES += \
     customfile.cpp \
     custompairvector.cpp \
     customvector.cpp \
+    findandreplace.cpp \
     highlighter.cpp \
     main.cpp \
     editor.cpp
@@ -21,6 +22,7 @@ HEADERS += \
     custompairvector.h \
     customvector.h \
     editor.h \
+    findandreplace.h \
     highlighter.h
 
 FORMS += \

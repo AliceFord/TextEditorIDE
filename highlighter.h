@@ -12,11 +12,25 @@ class Highlighter : public QSyntaxHighlighter
     Q_OBJECT
 
 public:
-    Highlighter(QTextDocument *parent = 0, int language = 0);
+    Highlighter(QTextDocument *parent = 0, int language = 0, QString searchTerm = "", QString replaceTerm = "nein");
     enum Language {
         CPP,
         PYTHON
     };
+
+    QTextDocument *getParent() {
+        return parent;
+    }
+
+    int getLanguage() {
+        return language;
+    }
+
+    void setReplaceTerm(QString replaceTerm) {
+        this->replaceTerm = replaceTerm;
+    }
+
+    QPair<QRegularExpressionMatch, QTextCharFormat> cycleSearch();
 
 protected:
     void highlightBlock(const QString &text) override;
@@ -29,6 +43,15 @@ private:
         QRegularExpression pattern;
         QTextCharFormat format;
     };
+
+    QTextDocument *parent;
+    int language;
+    QString searchTerm;
+    QString replaceTerm;
+
+    int currentFoundItem = -1;
+    int counter = 0;
+
     QVector<HighlightingRule> highlightingRules;
 
     QRegularExpression commentStartExpression;
@@ -40,6 +63,13 @@ private:
     QTextCharFormat multiLineCommentFormat;
     QTextCharFormat quotationFormat;
     QTextCharFormat functionFormat;
+    QTextCharFormat searchTermFormat;
+    QTextCharFormat currentSearchTermFormat;
+
+    QPair<QRegularExpressionMatch, QTextCharFormat> foundItem;
+    QPair<QRegularExpressionMatch, QTextCharFormat> replaceItem;
+
+    const QString DEFAULT_REPLACE_TEXT = "nein";
 };
 
 #endif // HIGHLIGHTER_H
