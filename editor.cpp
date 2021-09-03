@@ -2,6 +2,7 @@
 #include "highlighter.h"
 #include "customfile.h"
 #include "findandreplace.h"
+#include "hexeditor.h"
 
 #include <QDebug>
 #include <QFileDialog>
@@ -137,6 +138,12 @@ void Editor::setupDocks()
     addDockWidget(Qt::RightDockWidgetArea, liveHTMLView);
 
     connect(liveHTMLViewAction, &QAction::triggered, this, [=](){ liveHTMLView->isHidden() ? liveHTMLView->show() : liveHTMLView->hide(); });
+
+    QAction *hexEditorAction = secondaryToolbar->addAction("&3 Hex Editor");
+    hexEditorAction->setShortcut(QKeySequence("Alt+3"));
+
+    HexEditor *editor = new HexEditor();
+    connect(hexEditorAction, &QAction::triggered, editor, [=](){ editor->setFile(openFiles.find(currentOpenFileIndex)); editor->show(); });
 }
 
 QPair<int, QAction*> Editor::findOpenFileAction(int index, bool second)

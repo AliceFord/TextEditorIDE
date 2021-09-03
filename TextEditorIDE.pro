@@ -13,6 +13,8 @@ SOURCES += \
     custompairvector.cpp \
     customvector.cpp \
     findandreplace.cpp \
+    hexeditor.cpp \
+    hexeditwidget.cpp \
     highlighter.cpp \
     main.cpp \
     editor.cpp
@@ -23,6 +25,8 @@ HEADERS += \
     customvector.h \
     editor.h \
     findandreplace.h \
+    hexeditor.h \
+    hexeditwidget.h \
     highlighter.h
 
 FORMS += \
