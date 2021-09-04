@@ -14,6 +14,6 @@ HexEditor::HexEditor(QWidget *parent) : QMainWindow(parent)
 
 void HexEditor::setFile(CustomFile *file) {
     this->file = file;
-    editor->setData(new QByteArray("abcdefghijklmnopqrstuvwxyz!0123456789"));
+    editor->setData(new QByteArray((file->currentText).toStdString().c_str()));
     //display->setPlainText("yo");
 }
