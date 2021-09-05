@@ -43,6 +43,8 @@ void HexeditWidget::paintEvent(QPaintEvent *event) {
     QString current;
     QString offset;
     for (int i = 0; i < std::ceil(data->size() / 16.0); i++) {
+        if (20 + 16 * (i + 1) + scrollValue > height()) break;
+        if (20 + 16 * (i + 1) + scrollValue < 0) continue;
         offset.setNum(i * 16, 16);
         offset = offset.rightJustified(8, '0');
         painter.setPen(bluePen);

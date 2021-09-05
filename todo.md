@@ -1,7 +1,7 @@
 ## Optimisation:
 
 - When updating cursor, have flag so only cursor is redrawn
-- When drawing data, only draw visible data
+- ~~When drawing data, only draw visible data~~
 
 
 ## Bugs:
@@ -11,4 +11,4 @@
 
 ## Features:
 
-- Scrolling
+- ~~Scrolling~~

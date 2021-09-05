@@ -12,5 +12,7 @@ HexEditorSpecialEditor::HexEditorSpecialEditor(QByteArray *data, QWidget *parent
 }
 
 void HexEditorSpecialEditor::analyse() {
-    qDebug() << 1;
+//    QDataStream ds(*data);
+//    unsigned char header;
+//    ds >> header;
 }
