@@ -6,6 +6,7 @@
 #include "customfile.h"
 #include "hexeditwidget.h"
 #include "editor.h"
+#include "hexeditorspecialeditor.h"
 
 class HexEditor : public QMainWindow
 {
@@ -22,6 +23,9 @@ private:
     CustomFile *file;
     HexeditWidget *editor;
     Editor *parentEditor;
+
+    HexEditorSpecialEditor *specialEditorsWidget;
+    QDockWidget *specialEditors;
 };
 
 #endif // HEXEDITOR_H

@@ -55,7 +55,7 @@ void Editor::setupEditor()
 
 void Editor::swapOpenFile(int fileToChangeToIndex)
 {
-    openFiles.find(currentOpenFileIndex)->currentText = editor->toPlainText();
+    openFiles.find(currentOpenFileIndex)->currentText = QByteArray(editor->toPlainText().toStdString().c_str());
     editor->setPlainText(openFiles.find(fileToChangeToIndex)->currentText);
     currentOpenFileIndex = openFiles.find(fileToChangeToIndex)->index;
 }
@@ -218,7 +218,7 @@ void Editor::newFile()
 {
     if (currentOpenFileIndex != -1) {
         CustomFile *oldFile = openFiles.find(currentOpenFileIndex);
-        oldFile->currentText = editor->toPlainText();
+        oldFile->currentText = QByteArray(editor->toPlainText().toStdString().c_str());
     }
 
     CustomFile newFile = CustomFile(rand() % INT_MAX, NEW_FILE_NAME, NEW_FILE_NAME, "");
@@ -247,17 +247,19 @@ void Editor::openFile()
     }
 
     QFile file(fileLocation);
-    QByteArray content = *(new QByteArray(""));
+    QByteArray fileData(file.size(), '\0');
     if (file.open(QFile::ReadOnly)) { // QFile::Text
-        content = file.readAll();
-        editor->setPlainText(content);
+        QDataStream fileStream(&file);
+        fileStream.readRawData(fileData.data(), file.size());
+        qDebug() << fileData.at(0xd);
+        editor->setPlainText(fileData);
         file.close();
     } else {
         QMessageBox errorBox;
         errorBox.setText("This file could not be opened.");
         errorBox.exec();
     }
-    CustomFile openedFile = CustomFile(rand() % INT_MAX, fileLocation, content);
+    CustomFile openedFile = CustomFile(rand() % INT_MAX, fileLocation, fileData);
     openFiles.append(openedFile);
 
     currentOpenFileIndex = openedFile.index;

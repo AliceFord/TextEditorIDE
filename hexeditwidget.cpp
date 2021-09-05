@@ -43,7 +43,7 @@ void HexeditWidget::paintEvent(QPaintEvent *event) {
             if (i * 16 + j >= data->size()) break;
             if (j % 2 == 0) painter.setPen(blackPen);
             else painter.setPen(grayPen);
-            current.setNum(data->at(i * 16 + j), 16);
+            current.setNum((unsigned char)data->at(i * 16 + j), 16);
             current = current.rightJustified(2, '0');
             painter.drawText(80 + 28 * (j + 1), 20 + 16 * (i + 1), current);
 
@@ -78,6 +78,7 @@ void HexeditWidget::editData(QKeyEvent *event) {
     } else {
         current = (((current >> 4) & 0xf) << 4) | (intKey.toShort(nullptr, 16) & 0xf);
     }
+
     (*data)[selector.byteCounter] = current;
 
     selector++;

@@ -14,6 +14,7 @@ SOURCES += \
     customvector.cpp \
     findandreplace.cpp \
     hexeditor.cpp \
+    hexeditorspecialeditor.cpp \
     hexeditwidget.cpp \
     highlighter.cpp \
     main.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
     editor.h \
     findandreplace.h \
     hexeditor.h \
+    hexeditorspecialeditor.h \
     hexeditwidget.h \
     highlighter.h
 
@@ -36,3 +38,6 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    todo.md

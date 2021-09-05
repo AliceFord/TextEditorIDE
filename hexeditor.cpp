@@ -1,22 +1,30 @@
 #include "hexeditor.h"
 #include "qdebug.h"
+#include <QMenuBar>
+#include <QDockWidget>
 
 HexEditor::HexEditor(Editor *parentEditor, QWidget *parent) : QMainWindow(parent)
 {
     this->parentEditor = parentEditor;
 
-    setGeometry(100, 100, 800, 800);
+    setGeometry(100, 100, 1200, 800);
 
     editor = new HexeditWidget();
-//    QFont f("unexistent");
-//    f.setStyleHint(QFont::Monospace);
-//    //display->setFont(f);
+
+
+    specialEditors = new QDockWidget(tr("Special Editors"), this);
+    specialEditors->setMinimumWidth(400);
+    specialEditors->setAllowedAreas(Qt::RightDockWidgetArea);
+    specialEditorsWidget = new HexEditorSpecialEditor();
+    specialEditors->setWidget(specialEditorsWidget);
+    addDockWidget(Qt::RightDockWidgetArea, specialEditors);
+
     setCentralWidget(editor);
 }
 
 void HexEditor::setFile(CustomFile *file) {
     this->file = file;
-    editor->setData(new QByteArray((file->currentText).toStdString().c_str()));
+    editor->setData(&file->currentText);
     //display->setPlainText("yo");
 }
 

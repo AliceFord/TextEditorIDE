@@ -8,8 +8,8 @@ class CustomFile
 {
 public:
     CustomFile();
-    CustomFile(int index, QString filePath, QString currentText);
-    CustomFile(int index, QString filePath, QString fileName, QString currentText);
+    CustomFile(int index, QString filePath, QByteArray currentText);
+    CustomFile(int index, QString filePath, QString fileName, QByteArray currentText);
 
     void updateFilenameFromFilepath();
 
@@ -20,7 +20,7 @@ public:
     int index;
     QString fileName;
     QString filePath;
-    QString currentText;
+    QByteArray currentText;
     bool isSaved = true;
 };
 

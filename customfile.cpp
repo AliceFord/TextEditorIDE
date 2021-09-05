@@ -5,7 +5,7 @@ CustomFile::CustomFile()
 
 }
 
-CustomFile::CustomFile(int index, QString filePath, QString currentText)
+CustomFile::CustomFile(int index, QString filePath, QByteArray currentText)
 {
     this->index = index;
     this->filePath = filePath;
@@ -13,7 +13,7 @@ CustomFile::CustomFile(int index, QString filePath, QString currentText)
     this->currentText = currentText;
 };
 
-CustomFile::CustomFile(int index, QString filePath, QString fileName, QString currentText)
+CustomFile::CustomFile(int index, QString filePath, QString fileName, QByteArray currentText)
 {
     this->index = index;
     this->filePath = filePath;
