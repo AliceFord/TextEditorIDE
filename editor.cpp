@@ -246,16 +246,18 @@ void Editor::openFile()
         highlighter = new Highlighter(editor->document(), Highlighter::PYTHON);
     }
 
-
     QFile file(fileLocation);
-    if (file.open(QFile::Text | QFile::ReadOnly))
-        editor->setPlainText(file.readAll());
-    else {
+    QByteArray content = *(new QByteArray(""));
+    if (file.open(QFile::ReadOnly)) { // QFile::Text
+        content = file.readAll();
+        editor->setPlainText(content);
+        file.close();
+    } else {
         QMessageBox errorBox;
         errorBox.setText("This file could not be opened.");
         errorBox.exec();
     }
-    CustomFile openedFile = CustomFile(rand() % INT_MAX, fileLocation, editor->toPlainText());
+    CustomFile openedFile = CustomFile(rand() % INT_MAX, fileLocation, content);
     openFiles.append(openedFile);
 
     currentOpenFileIndex = openedFile.index;
@@ -266,8 +268,6 @@ void Editor::openFile()
     openFilesActions.append(toolbarName);
     connect(toolbarName.second, &QAction::triggered, this, [=](){ swapOpenFile(openedFile.index); });
     toolBar->addSeparator();
-
-    file.close();
 }
 
 void Editor::saveFile()
@@ -280,14 +280,14 @@ void Editor::saveFile()
         }
         fileToSave->updateFilenameFromFilepath();
         QFile file(fileToSave->filePath);
-        if (file.open(QFile::Text | QFile::WriteOnly)) {
+        if (file.open(QFile::WriteOnly)) { // QFile::Text
             QTextStream out(&file);
             out << editor->toPlainText();
             fileToSave->isSaved = true;
             renameFile(fileToSave, fileToSave->fileName);
         } else {
             QMessageBox errorBox;
-            errorBox.setText("This file could not be saved.");
+            errorBox.setText("This file could not be saved.\n" + file.errorString());
             errorBox.exec();
         }
     }
@@ -298,7 +298,7 @@ void Editor::saveFileAs()
     CustomFile *fileToSave = openFiles.find(currentOpenFileIndex);
     QUrl fileUrl = QFileDialog::getSaveFileUrl(this, tr("Save File As...", ""), tr("All Files (*)"));
     QFile file(QString::fromStdString(fileUrl.toString().toStdString().substr(8)));
-    if (file.open(QFile::Text | QFile::WriteOnly)) {
+    if (file.open(QFile::WriteOnly)) { // QFile::Text
         file.write(editor->toPlainText().toUtf8());
         fileToSave->filePath = fileUrl.toLocalFile();
         qDebug() << CustomFile::getFileNameWithFilePath(fileUrl.toLocalFile());
@@ -320,6 +320,7 @@ void Editor::closeFile()
         }
     }
     toolBar->removeAction(openFilesActions.find(currentOpenFileIndex));
+    toolBar->update();
     editor->clear();
     openFilesActions.removeByNumber(openFiles.find(currentOpenFileIndex)->index);
     openFiles.removeByNumber(openFiles.find(currentOpenFileIndex)->index);

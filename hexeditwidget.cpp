@@ -2,12 +2,14 @@
 #include <QPainter>
 #include <QDebug>
 #include <cmath>
+#include <QKeyEvent>
 
 HexeditWidget::HexeditWidget()
 {
     blackPen = *(new QPen(Qt::black));
     grayPen = *(new QPen(Qt::darkGray));
     bluePen = *(new QPen(Qt::blue));
+    selector = *(new NibbleSelector());
 }
 
 void HexeditWidget::paintEvent(QPaintEvent *event) {
@@ -50,6 +52,25 @@ void HexeditWidget::paintEvent(QPaintEvent *event) {
             current = data->at(i * 16 + j);
             painter.drawText(570 + 10 * j, 20 + 16 * (i + 1), current);
         }
+    }
+}
+
+void HexeditWidget::keyPressEvent(QKeyEvent *event) {
+    char keyPressed = event->text().at(0).toLatin1();
+    if ((keyPressed >= '0' && keyPressed <= '9') || (keyPressed >= 'a' && keyPressed <= 'f')) {
+        QString intKey(keyPressed);
+        char current = data->at(selector.byteCounter);
+        if (selector.nibbleCounter == 0) {
+            current = ((intKey.toShort(nullptr, 16) & 0xf) << 4) | (current & 0xf);
+        } else {
+            current = (((current >> 4) & 0xf) << 4) | (intKey.toShort(nullptr, 16) & 0xf);
+        }
+
+        (*data)[selector.byteCounter] = current;
+
+        selector++;
+
+        update();
     }
 }
 
