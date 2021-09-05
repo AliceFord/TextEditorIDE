@@ -12,6 +12,7 @@ class HexeditWidget : public QAbstractScrollArea
 public:
     HexeditWidget();
     void setData(QByteArray *data);
+    QByteArray getData();
 
 protected:
     void paintEvent(QPaintEvent *event);

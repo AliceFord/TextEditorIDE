@@ -21,6 +21,7 @@ public:
     Editor(QWidget *parent = 0);
 
     void replaceText(int startIndex, int length, QString replaceText);
+    void setTextFromHex(QByteArray hex);
 
 public slots:
     //void about();

@@ -5,20 +5,23 @@
 #include <QPlainTextEdit>
 #include "customfile.h"
 #include "hexeditwidget.h"
+#include "editor.h"
 
 class HexEditor : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit HexEditor(QWidget *parent = nullptr);
+    explicit HexEditor(Editor *parentEditor, QWidget *parent = nullptr);
 
     void setFile(CustomFile *file);
 
-signals:
+protected:
+    void closeEvent(QCloseEvent *event);
 
 private:
     CustomFile *file;
     HexeditWidget *editor;
+    Editor *parentEditor;
 };
 
 #endif // HEXEDITOR_H

@@ -142,7 +142,7 @@ void Editor::setupDocks()
     QAction *hexEditorAction = secondaryToolbar->addAction("&3 Hex Editor");
     hexEditorAction->setShortcut(QKeySequence("Alt+3"));
 
-    HexEditor *editor = new HexEditor();
+    HexEditor *editor = new HexEditor(this);
     connect(hexEditorAction, &QAction::triggered, editor, [=](){ editor->setFile(openFiles.find(currentOpenFileIndex)); editor->show(); });
 }
 
@@ -339,4 +339,8 @@ void Editor::replaceText(int startIndex, int length, QString replaceText)
 {
     QString text = editor->toPlainText();
     editor->setText(text.replace(startIndex, length, replaceText));
+}
+
+void Editor::setTextFromHex(QByteArray hex) {
+    editor->setText(hex);
 }
