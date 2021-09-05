@@ -1,10 +1,16 @@
 #include "hexeditorspecialeditor.h"
+#include <QDebug>
 
-HexEditorSpecialEditor::HexEditorSpecialEditor(QWidget *parent) : QTabWidget(parent)
+HexEditorSpecialEditor::HexEditorSpecialEditor(QByteArray *data, QWidget *parent) : QTabWidget(parent)
 {
+    this->data = data;
     inspectorTab = new QWidget();
     analysisTab = new QWidget();
 
     addTab(analysisTab, "Analysis");
     addTab(inspectorTab, "Inspector");
+}
+
+void HexEditorSpecialEditor::analyse() {
+    qDebug() << 1;
 }

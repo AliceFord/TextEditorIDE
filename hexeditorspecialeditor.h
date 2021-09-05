@@ -8,13 +8,16 @@ class HexEditorSpecialEditor : public QTabWidget
 {
     Q_OBJECT
 public:
-    explicit HexEditorSpecialEditor(QWidget *parent = nullptr);
+    explicit HexEditorSpecialEditor(QByteArray *data, QWidget *parent = nullptr);
+    void analyse();
 
 signals:
 
 private:
      QWidget *inspectorTab;
      QWidget *analysisTab;
+
+     QByteArray *data;
 };
 
 #endif // HEXEDITORSPECIALEDITOR_H

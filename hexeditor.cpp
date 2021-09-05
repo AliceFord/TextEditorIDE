@@ -15,7 +15,7 @@ HexEditor::HexEditor(Editor *parentEditor, QWidget *parent) : QMainWindow(parent
     specialEditors = new QDockWidget(tr("Special Editors"), this);
     specialEditors->setMinimumWidth(400);
     specialEditors->setAllowedAreas(Qt::RightDockWidgetArea);
-    specialEditorsWidget = new HexEditorSpecialEditor();
+    specialEditorsWidget = new HexEditorSpecialEditor(editor->getDataPtr());
     specialEditors->setWidget(specialEditorsWidget);
     addDockWidget(Qt::RightDockWidgetArea, specialEditors);
 
@@ -25,6 +25,7 @@ HexEditor::HexEditor(Editor *parentEditor, QWidget *parent) : QMainWindow(parent
 void HexEditor::setFile(CustomFile *file) {
     this->file = file;
     editor->setData(&file->currentText);
+    specialEditorsWidget->analyse();
     //display->setPlainText("yo");
 }
 

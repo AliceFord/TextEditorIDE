@@ -6,17 +6,20 @@
 #include <QPen>
 #include <QStack>
 
-class HexeditWidget : public QAbstractScrollArea
+class HexeditWidget : public QWidget
 {
     Q_OBJECT
 public:
     HexeditWidget();
     void setData(QByteArray *data);
     QByteArray getData();
+    QByteArray *getDataPtr();
 
 protected:
     void paintEvent(QPaintEvent *event);
     void keyPressEvent(QKeyEvent *event);
+    void wheelEvent(QWheelEvent *event);
+
 
 private:
     struct NibbleSelector {
@@ -92,6 +95,8 @@ private:
 
     NibbleSelector selector;
     QStack<UndoableActionDescriptor> undoStack;
+
+    long long scrollValue = 0;
 };
 
 #endif // HEXEDITWIDGET_H

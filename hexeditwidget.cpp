@@ -3,9 +3,17 @@
 #include <QDebug>
 #include <cmath>
 #include <QKeyEvent>
+#include <QScrollBar>
 
 HexeditWidget::HexeditWidget()
 {
+    grabKeyboard();
+
+    QPalette pal = QPalette();
+    pal.setColor(QPalette::Window, Qt::white);
+    setAutoFillBackground(true);
+    setPalette(pal);
+
     blackPen = *(new QPen(Qt::black));
     grayPen = *(new QPen(Qt::darkGray));
     bluePen = *(new QPen(Qt::blue));
@@ -13,7 +21,7 @@ HexeditWidget::HexeditWidget()
 }
 
 void HexeditWidget::paintEvent(QPaintEvent *event) {
-    QPainter painter(viewport());
+    QPainter painter(this);
     QFont font = painter.font();
     font.setFamily("Courier New");
     font.setPointSize(11);
@@ -21,16 +29,16 @@ void HexeditWidget::paintEvent(QPaintEvent *event) {
 
     QString offsetText = "Offset";
     painter.setPen(bluePen);
-    painter.drawText(10, 16, offsetText);
+    painter.drawText(10, 16 + scrollValue, offsetText);
 
     for (int i = 0; i < 16; i++) {
         offsetText.setNum(i, 16);
         offsetText = offsetText.rightJustified(2, '0');
-        painter.drawText(80 + 28 * (i + 1), 16, offsetText);
+        painter.drawText(80 + 28 * (i + 1), 16 + scrollValue, offsetText);
     }
 
     offsetText = "Decoded Text";
-    painter.drawText(570, 16, offsetText);
+    painter.drawText(570, 16 + scrollValue, offsetText);
 
     QString current;
     QString offset;
@@ -38,34 +46,41 @@ void HexeditWidget::paintEvent(QPaintEvent *event) {
         offset.setNum(i * 16, 16);
         offset = offset.rightJustified(8, '0');
         painter.setPen(bluePen);
-        painter.drawText(10, 20 + 16 * (i + 1), offset);
+        painter.drawText(10, 20 + 16 * (i + 1) + scrollValue, offset);
         for (int j = 0; j < 16; j++) {
             if (i * 16 + j >= data->size()) break;
             if (j % 2 == 0) painter.setPen(blackPen);
             else painter.setPen(grayPen);
             current.setNum((unsigned char)data->at(i * 16 + j), 16);
             current = current.rightJustified(2, '0');
-            painter.drawText(80 + 28 * (j + 1), 20 + 16 * (i + 1), current);
+            painter.drawText(80 + 28 * (j + 1), 20 + 16 * (i + 1) + scrollValue, current);
 
             painter.setPen(blackPen);
 
             current = data->at(i * 16 + j);
-            painter.drawText(570 + 10 * j, 20 + 16 * (i + 1), current);
+            painter.drawText(570 + 10 * j, 20 + 16 * (i + 1) + scrollValue, current);
         }
     }
 
     // Cursor
+    while ((20 + 16 * (selector.byteCounter / 16 + 1) + scrollValue) < 0) {
+        selector.byteCounter += 16;
+    }
+
+    while ((20 + 16 * (selector.byteCounter / 16 + 1) + scrollValue) > height()) {
+        selector.byteCounter -= 16;
+    }
 
     int xpos = 80 + 28 * (selector.byteCounter % 16 + 1);
     xpos += selector.nibbleCounter * 9;
     int ypos = 20 + 16 * (selector.byteCounter / 16 + 1);
-    painter.drawLine(xpos, ypos+2, xpos, ypos-12);
-    painter.drawLine(xpos+1, ypos+2, xpos+1, ypos-12);
+    painter.drawLine(xpos, ypos+2 + scrollValue, xpos, ypos-12 + scrollValue);
+    painter.drawLine(xpos+1, ypos+2 + scrollValue, xpos+1, ypos-12 + scrollValue);
 
     xpos = 570 + 10 * (selector.byteCounter % 16);
     ypos = 20 + 16 * (selector.byteCounter / 16 + 1);
-    painter.drawLine(xpos, ypos+2, xpos, ypos-12);
-    painter.drawLine(xpos+1, ypos+2, xpos+1, ypos-12);
+    painter.drawLine(xpos, ypos+2 + scrollValue, xpos, ypos-12 + scrollValue);
+    painter.drawLine(xpos+1, ypos+2 + scrollValue, xpos+1, ypos-12 + scrollValue);
 }
 
 void HexeditWidget::editData(QKeyEvent *event) {
@@ -124,17 +139,29 @@ void HexeditWidget::keyPressEvent(QKeyEvent *event) {
     default:
         break;
     }
-    viewport()->update();
+    update();
+}
+
+void HexeditWidget::wheelEvent(QWheelEvent *event) {
+    if (!((long long)event->angleDelta().y() > -scrollValue)) {
+        scrollValue += event->angleDelta().y();
+    }
+
+    update();
 }
 
 void HexeditWidget::setData(QByteArray *data) {
     this->data = data;
     selector = *(new NibbleSelector());
-    viewport()->update();
+    update();
 }
 
 QByteArray HexeditWidget::getData() {
     return *data;
+}
+
+QByteArray *HexeditWidget::getDataPtr() {
+    return data;
 }
 
 void HexeditWidget::undo() {
