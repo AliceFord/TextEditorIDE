@@ -53,29 +53,90 @@ void HexeditWidget::paintEvent(QPaintEvent *event) {
             painter.drawText(570 + 10 * j, 20 + 16 * (i + 1), current);
         }
     }
+
+    // Cursor
+
+    int xpos = 80 + 28 * (selector.byteCounter % 16 + 1);
+    xpos += selector.nibbleCounter * 9;
+    int ypos = 20 + 16 * (selector.byteCounter / 16 + 1);
+    painter.drawLine(xpos, ypos+2, xpos, ypos-12);
+    painter.drawLine(xpos+1, ypos+2, xpos+1, ypos-12);
+
+    xpos = 570 + 10 * (selector.byteCounter % 16);
+    ypos = 20 + 16 * (selector.byteCounter / 16 + 1);
+    painter.drawLine(xpos, ypos+2, xpos, ypos-12);
+    painter.drawLine(xpos+1, ypos+2, xpos+1, ypos-12);
+}
+
+void HexeditWidget::editData(QKeyEvent *event) {
+    char keyPressed = event->text().at(0).toLatin1();
+    QString intKey(keyPressed);
+    char current = data->at(selector.byteCounter);
+    undoStack.push(UndoableActionDescriptor(UndoableAction::CHANGE_NIBBLE, selector, data->at(selector.byteCounter)));
+    if (selector.nibbleCounter == 0) {
+        current = ((intKey.toShort(nullptr, 16) & 0xf) << 4) | (current & 0xf);
+    } else {
+        current = (((current >> 4) & 0xf) << 4) | (intKey.toShort(nullptr, 16) & 0xf);
+    }
+    (*data)[selector.byteCounter] = current;
+
+    selector++;
 }
 
 void HexeditWidget::keyPressEvent(QKeyEvent *event) {
-    char keyPressed = event->text().at(0).toLatin1();
-    if ((keyPressed >= '0' && keyPressed <= '9') || (keyPressed >= 'a' && keyPressed <= 'f')) {
-        QString intKey(keyPressed);
-        char current = data->at(selector.byteCounter);
-        if (selector.nibbleCounter == 0) {
-            current = ((intKey.toShort(nullptr, 16) & 0xf) << 4) | (current & 0xf);
-        } else {
-            current = (((current >> 4) & 0xf) << 4) | (intKey.toShort(nullptr, 16) & 0xf);
-        }
-
-        (*data)[selector.byteCounter] = current;
-
+    switch (event->key()) {
+    case Qt::Key_0:
+    case Qt::Key_1:
+    case Qt::Key_2:
+    case Qt::Key_3:
+    case Qt::Key_4:
+    case Qt::Key_5:
+    case Qt::Key_6:
+    case Qt::Key_7:
+    case Qt::Key_8:
+    case Qt::Key_9:
+    case Qt::Key_A:
+    case Qt::Key_B:
+    case Qt::Key_C:
+    case Qt::Key_D:
+    case Qt::Key_E:
+    case Qt::Key_F:
+        editData(event);
+        break;
+    case Qt::Key_Left:
+        selector--;
+        break;
+    case Qt::Key_Right:
         selector++;
-
-        update();
+        break;
+    case Qt::Key_Up:
+        if (selector.byteCounter >= 16) selector.byteCounter -= 16;
+        break;
+    case Qt::Key_Down:
+        if (selector.byteCounter / 16 < data->size() / 16) selector.byteCounter += 16;
+        break;
+    case Qt::Key_Z:
+        if (event->modifiers().testFlag(Qt::KeyboardModifier::ControlModifier)) {
+            undo();
+        }
+        break;
+    default:
+        break;
     }
+    viewport()->update();
 }
 
 void HexeditWidget::setData(QByteArray *data) {
     this->data = data;
-    update();
+    selector = *(new NibbleSelector());
+    viewport()->update();
+}
+
+void HexeditWidget::undo() {
+    UndoableActionDescriptor undoEvent = undoStack.pop();
+    if (undoEvent.action == UndoableAction::CHANGE_NIBBLE) {
+        (*data)[undoEvent.selector.byteCounter] = undoEvent.prevValue;
+        this->selector = undoEvent.selector;
+    }
 }
 
