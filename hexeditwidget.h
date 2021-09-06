@@ -13,7 +13,6 @@ public:
     HexeditWidget();
     void setData(QByteArray *data);
     QByteArray getData();
-    QByteArray *getDataPtr();
 
 protected:
     void paintEvent(QPaintEvent *event);

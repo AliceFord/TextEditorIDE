@@ -251,7 +251,6 @@ void Editor::openFile()
     if (file.open(QFile::ReadOnly)) { // QFile::Text
         QDataStream fileStream(&file);
         fileStream.readRawData(fileData.data(), file.size());
-        qDebug() << fileData.at(0xd);
         editor->setPlainText(fileData);
         file.close();
     } else {

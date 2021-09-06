@@ -162,10 +162,6 @@ QByteArray HexeditWidget::getData() {
     return *data;
 }
 
-QByteArray *HexeditWidget::getDataPtr() {
-    return data;
-}
-
 void HexeditWidget::undo() {
     UndoableActionDescriptor undoEvent = undoStack.pop();
     if (undoEvent.action == UndoableAction::CHANGE_NIBBLE) {
