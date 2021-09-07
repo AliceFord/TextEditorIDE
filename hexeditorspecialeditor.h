@@ -22,6 +22,7 @@ private:
         GENERAL_BIT_FLAG,
         ZIP_COMPRESSION_METHOD,
         LAST_MODIFICATION,
+        FILE_NAME,
         __SIZE__
     };
 

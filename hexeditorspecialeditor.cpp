@@ -21,6 +21,7 @@ HexEditorSpecialEditor::HexEditorSpecialEditor(QWidget *parent) : QTabWidget(par
     analysisTab->setItem(AnalysisTableRow::GENERAL_BIT_FLAG, 0, new QTableWidgetItem("General Purpose Bit Flag"));
     analysisTab->setItem(AnalysisTableRow::ZIP_COMPRESSION_METHOD, 0, new QTableWidgetItem("Zip Compression Method"));
     analysisTab->setItem(AnalysisTableRow::LAST_MODIFICATION, 0, new QTableWidgetItem("Last Modification"));
+    analysisTab->setItem(AnalysisTableRow::FILE_NAME, 0, new QTableWidgetItem("Original File Name"));
 
     //analysisTab->setLayout(analysisLayout);
 
@@ -41,14 +42,20 @@ bool samelengthcmp(char *a, char *b, int len) {
     return true;
 }
 
-QString longToDOSTimeAndDate(unsigned long time) {
-    qDebug() << time;
+QString longToDOSTimeAndDate(unsigned long time) { // 10000110111001100101001100100100
     QString output = "";
-    output.setNum(time, 2);
-    qDebug() << output;
-    output.setNum(time, 16);
-    qDebug() << output;
-    return "";
+    output += QString::number((time) & 0b11111).rightJustified(2, '0');
+    output += "/";
+    output += QString::number((time >> 5) & 0b1111).rightJustified(2, '0');
+    output += "/";
+    output += QString::number(((time >> 9) & 0b1111111) + 1980);
+    output += " ";
+    output += QString::number((time >> 27) & 0b11111).rightJustified(2, '0');
+    output += ":";
+    output += QString::number((time >> 21) & 0b111111).rightJustified(2, '0');
+    output += ":";
+    output += QString::number(((time >> 16) & 0b11111) << 1).rightJustified(2, '0');
+    return output;
 }
 
 void HexEditorSpecialEditor::hideUnusedRows() {
@@ -99,6 +106,28 @@ void HexEditorSpecialEditor::analyse() {
             outputStr = longToDOSTimeAndDate(buffer4[1] << 24 | buffer4[0] << 16 | buffer4[3] << 8 | buffer4[2]);
 
             analysisTab->setItem(AnalysisTableRow::LAST_MODIFICATION, 1, new QTableWidgetItem(outputStr));
+
+            stream.readRawData((char*)buffer4, 4); // Checksum
+
+            stream.readRawData((char*)buffer4, 4); // Compressed Size
+
+            stream.readRawData((char*)buffer4, 4); // Uncompressed Size
+
+            stream.readRawData((char*)buffer2, 2);
+            short fileNameLen = buffer2[1] << 8 | buffer2[0];
+
+            stream.readRawData((char*)buffer2, 2);
+            short extraFieldLen = buffer2[1] << 8 | buffer2[0];
+
+            unsigned char buffer1[1];
+            outputStr = "";
+
+            for (int i = 0; i < fileNameLen; i++) {
+                stream.readRawData((char*)buffer1, 1);
+                outputStr += buffer1[0];
+            }
+            analysisTab->setItem(AnalysisTableRow::FILE_NAME, 1, new QTableWidgetItem(outputStr));
+
         } else {
             analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("Unknown"));
         }
