@@ -22,6 +22,13 @@ HexEditorSpecialEditor::HexEditorSpecialEditor(QWidget *parent) : QTabWidget(par
     analysisTab->setItem(AnalysisTableRow::ZIP_COMPRESSION_METHOD, 0, new QTableWidgetItem("Zip Compression Method"));
     analysisTab->setItem(AnalysisTableRow::LAST_MODIFICATION, 0, new QTableWidgetItem("Last Modification"));
     analysisTab->setItem(AnalysisTableRow::FILE_NAME, 0, new QTableWidgetItem("Original File Name"));
+    analysisTab->setItem(AnalysisTableRow::IMG_WIDTH, 0, new QTableWidgetItem("Image Width"));
+    analysisTab->setItem(AnalysisTableRow::IMG_HEIGHT, 0, new QTableWidgetItem("Image Height"));
+    analysisTab->setItem(AnalysisTableRow::IMG_BITDEPTH, 0, new QTableWidgetItem("Image Bitdepth"));
+    analysisTab->setItem(AnalysisTableRow::IMG_COLOR_TYPE, 0, new QTableWidgetItem("Image Color Type"));
+    analysisTab->setItem(AnalysisTableRow::IMG_COMPRESSION, 0, new QTableWidgetItem("Image Compression Method"));
+    analysisTab->setItem(AnalysisTableRow::IMG_FILTER_METHOD, 0, new QTableWidgetItem("Image Filter Method"));
+    analysisTab->setItem(AnalysisTableRow::IMG_INTERLACE_METHOD, 0, new QTableWidgetItem("Image Interlace Method"));
 
     //analysisTab->setLayout(analysisLayout);
 
@@ -33,7 +40,7 @@ void HexEditorSpecialEditor::setData(QByteArray data) {
     this->data = data;
 }
 
-bool samelengthcmp(char *a, char *b, int len) {
+bool samelengthcmp(unsigned char *a, unsigned char *b, int len) {
     for (int i = 0; i < len; i++) {
         if (*a != *b) return false;
         ++a;
@@ -73,9 +80,9 @@ void HexEditorSpecialEditor::analyse() {
 
     if (data.size() >= 4) {
         QDataStream stream(&data, QIODevice::ReadOnly);
-        char buffer[4];
-        stream.readRawData(buffer, 4);
-        if (samelengthcmp(buffer, new char[4]{0x50, 0x4b, 0x03, 0x04}, 4)) {
+        unsigned char buffer[4];
+        stream.readRawData((char*)buffer, 4);
+        if (samelengthcmp(buffer, new unsigned char[4]{0x50, 0x4b, 0x03, 0x04}, 4)) {
             analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("Zip archive"));
 
             unsigned char buffer2[2];
@@ -127,10 +134,56 @@ void HexEditorSpecialEditor::analyse() {
                 outputStr += buffer1[0];
             }
             analysisTab->setItem(AnalysisTableRow::FILE_NAME, 1, new QTableWidgetItem(outputStr));
+        } else if (samelengthcmp(buffer, new unsigned char[4]{0x89, 0x50, 0x4e, 0x47}, 4)) {
+            stream.readRawData((char*)buffer, 4);
+            if (samelengthcmp(buffer, new unsigned char[4]{0x0d, 0x0a, 0x1a, 0x0a}, 4)) {
+                analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("PNG Image"));
+                unsigned char buffer4[4];
+
+                stream.readRawData((char*)buffer4, 4);
+                int length = buffer4[0] << 24 | buffer4[1] << 16 | buffer4[2] << 8 | buffer4[3];
+
+                stream.readRawData((char*)buffer4, 4);
+                if (!samelengthcmp(buffer4, new unsigned char[4]{0x49, 0x48, 0x44, 0x52}, 4)) goto analysisEnd;
+
+                QString output("");
+
+                stream.readRawData((char*)buffer4, 4);
+                output.setNum(buffer4[0] << 24 | buffer4[1] << 16 | buffer4[2] << 8 | buffer4[3]);
+                analysisTab->setItem(AnalysisTableRow::IMG_WIDTH, 1, new QTableWidgetItem(output));
+
+                stream.readRawData((char*)buffer4, 4);
+                output.setNum(buffer4[0] << 24 | buffer4[1] << 16 | buffer4[2] << 8 | buffer4[3]);
+                analysisTab->setItem(AnalysisTableRow::IMG_HEIGHT, 1, new QTableWidgetItem(output));
+
+                unsigned char buffer1[1];
+
+                stream.readRawData((char*)buffer1, 1);
+                output.setNum(buffer1[0]);
+                output += "-bit";
+                analysisTab->setItem(AnalysisTableRow::IMG_BITDEPTH, 1, new QTableWidgetItem(output));
+
+
+                stream.readRawData((char*)buffer1, 1);
+                analysisTab->setItem(AnalysisTableRow::IMG_COLOR_TYPE, 1, new QTableWidgetItem(pngColorTypeTable[buffer1[0]]));
+
+                stream.readRawData((char*)buffer1, 1);
+                output.setNum(buffer1[0]);
+                analysisTab->setItem(AnalysisTableRow::IMG_COMPRESSION, 1, new QTableWidgetItem(output));
+
+                stream.readRawData((char*)buffer1, 1);
+                output.setNum(buffer1[0]);
+                analysisTab->setItem(AnalysisTableRow::IMG_FILTER_METHOD, 1, new QTableWidgetItem(output));
+
+                stream.readRawData((char*)buffer1, 1);
+                output = (buffer1[0] == 0 ? "No Interlace" : "Adam7 Interlace");
+                analysisTab->setItem(AnalysisTableRow::IMG_INTERLACE_METHOD, 1, new QTableWidgetItem(output));
+            } // FF D8 FF E0 00 10 4A 46 49 46 00
 
         } else {
             analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("Unknown"));
         }
     }
+analysisEnd:
     hideUnusedRows();
 }
