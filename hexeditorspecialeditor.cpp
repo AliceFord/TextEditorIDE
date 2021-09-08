@@ -18,6 +18,7 @@ HexEditorSpecialEditor::HexEditorSpecialEditor(QWidget *parent) : QTabWidget(par
 
     analysisTab->setItem(AnalysisTableRow::FILETYPE, 0, new QTableWidgetItem("File Type"));
     analysisTab->setItem(AnalysisTableRow::ZIP_EXTRACT_VERSION, 0, new QTableWidgetItem("Zip Minimum Extract Version"));
+    analysisTab->setItem(AnalysisTableRow::JPEG_EXTRACT_VERSION, 0, new QTableWidgetItem("JPEG Version"));
     analysisTab->setItem(AnalysisTableRow::GENERAL_BIT_FLAG, 0, new QTableWidgetItem("General Purpose Bit Flag"));
     analysisTab->setItem(AnalysisTableRow::ZIP_COMPRESSION_METHOD, 0, new QTableWidgetItem("Zip Compression Method"));
     analysisTab->setItem(AnalysisTableRow::LAST_MODIFICATION, 0, new QTableWidgetItem("Last Modification"));
@@ -79,107 +80,119 @@ void HexEditorSpecialEditor::analyse() {
     }
 
     if (data.size() >= 4) {
+        QString output("");
+
         QDataStream stream(&data, QIODevice::ReadOnly);
-        unsigned char buffer[4];
+        unsigned char buffer[256];
         stream.readRawData((char*)buffer, 4);
         if (samelengthcmp(buffer, new unsigned char[4]{0x50, 0x4b, 0x03, 0x04}, 4)) {
             analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("Zip archive"));
 
-            unsigned char buffer2[2];
-            stream.readRawData((char*)buffer2, 2);
+            stream.readRawData((char*)buffer, 2);
 
-            QString outputStr("");
-            outputStr.setNum(buffer2[1] << 8 | buffer2[0], 10);
-            outputStr.insert(outputStr.length() - 1, '.');
+            output.setNum(buffer[1] << 8 | buffer[0], 10);
+            output.insert(output.length() - 1, '.');
 
-            analysisTab->setItem(AnalysisTableRow::ZIP_EXTRACT_VERSION, 1, new QTableWidgetItem(outputStr));
+            analysisTab->setItem(AnalysisTableRow::ZIP_EXTRACT_VERSION, 1, new QTableWidgetItem(output));
 
-            stream.readRawData((char*)buffer2, 2);
-            outputStr.setNum(buffer2[1] << 8 | buffer2[0], 2);
-            outputStr = outputStr.rightJustified(16, '0');
-            outputStr.insert(0, 'b');
-            outputStr.insert(0, '0');
+            stream.readRawData((char*)buffer, 2);
+            output.setNum(buffer[1] << 8 | buffer[0], 2);
+            output = output.rightJustified(16, '0');
+            output.insert(0, 'b');
+            output.insert(0, '0');
 
-            analysisTab->setItem(AnalysisTableRow::GENERAL_BIT_FLAG, 1, new QTableWidgetItem(outputStr));
+            analysisTab->setItem(AnalysisTableRow::GENERAL_BIT_FLAG, 1, new QTableWidgetItem(output));
 
-            stream.readRawData((char*)buffer2, 2);
-            outputStr = compressionTable[buffer2[1] << 8 | buffer2[0]];
+            stream.readRawData((char*)buffer, 2);
+            output = compressionTable[buffer[1] << 8 | buffer[0]];
 
-            analysisTab->setItem(AnalysisTableRow::GENERAL_BIT_FLAG, 1, new QTableWidgetItem(outputStr));
+            analysisTab->setItem(AnalysisTableRow::GENERAL_BIT_FLAG, 1, new QTableWidgetItem(output));
 
-            unsigned char buffer4[4];
+            stream.readRawData((char*)buffer, 4);
+            output = longToDOSTimeAndDate(buffer[1] << 24 | buffer[0] << 16 | buffer[3] << 8 | buffer[2]);
 
-            stream.readRawData((char*)buffer4, 4);
-            outputStr = longToDOSTimeAndDate(buffer4[1] << 24 | buffer4[0] << 16 | buffer4[3] << 8 | buffer4[2]);
+            analysisTab->setItem(AnalysisTableRow::LAST_MODIFICATION, 1, new QTableWidgetItem(output));
 
-            analysisTab->setItem(AnalysisTableRow::LAST_MODIFICATION, 1, new QTableWidgetItem(outputStr));
+            stream.readRawData((char*)buffer, 4); // Checksum
 
-            stream.readRawData((char*)buffer4, 4); // Checksum
+            stream.readRawData((char*)buffer, 4); // Compressed Size
 
-            stream.readRawData((char*)buffer4, 4); // Compressed Size
+            stream.readRawData((char*)buffer, 4); // Uncompressed Size
 
-            stream.readRawData((char*)buffer4, 4); // Uncompressed Size
+            stream.readRawData((char*)buffer, 2);
+            short fileNameLen = buffer[1] << 8 | buffer[0];
 
-            stream.readRawData((char*)buffer2, 2);
-            short fileNameLen = buffer2[1] << 8 | buffer2[0];
-
-            stream.readRawData((char*)buffer2, 2);
-            short extraFieldLen = buffer2[1] << 8 | buffer2[0];
+            stream.readRawData((char*)buffer, 2);
+            short extraFieldLen = buffer[1] << 8 | buffer[0];
 
             unsigned char buffer1[1];
-            outputStr = "";
+            output = "";
 
             for (int i = 0; i < fileNameLen; i++) {
-                stream.readRawData((char*)buffer1, 1);
-                outputStr += buffer1[0];
+                stream.readRawData((char*)buffer, 1);
+                output += buffer[0];
             }
-            analysisTab->setItem(AnalysisTableRow::FILE_NAME, 1, new QTableWidgetItem(outputStr));
+            analysisTab->setItem(AnalysisTableRow::FILE_NAME, 1, new QTableWidgetItem(output));
         } else if (samelengthcmp(buffer, new unsigned char[4]{0x89, 0x50, 0x4e, 0x47}, 4)) {
             stream.readRawData((char*)buffer, 4);
             if (samelengthcmp(buffer, new unsigned char[4]{0x0d, 0x0a, 0x1a, 0x0a}, 4)) {
                 analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("PNG Image"));
-                unsigned char buffer4[4];
 
-                stream.readRawData((char*)buffer4, 4);
-                int length = buffer4[0] << 24 | buffer4[1] << 16 | buffer4[2] << 8 | buffer4[3];
+                stream.readRawData((char*)buffer, 4);
+                int length = buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3];
 
-                stream.readRawData((char*)buffer4, 4);
-                if (!samelengthcmp(buffer4, new unsigned char[4]{0x49, 0x48, 0x44, 0x52}, 4)) goto analysisEnd;
+                stream.readRawData((char*)buffer, 4);
+                if (!samelengthcmp(buffer, new unsigned char[4]{0x49, 0x48, 0x44, 0x52}, 4)) goto analysisEnd;
 
-                QString output("");
-
-                stream.readRawData((char*)buffer4, 4);
-                output.setNum(buffer4[0] << 24 | buffer4[1] << 16 | buffer4[2] << 8 | buffer4[3]);
+                stream.readRawData((char*)buffer, 4);
+                output.setNum(buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]);
                 analysisTab->setItem(AnalysisTableRow::IMG_WIDTH, 1, new QTableWidgetItem(output));
 
-                stream.readRawData((char*)buffer4, 4);
-                output.setNum(buffer4[0] << 24 | buffer4[1] << 16 | buffer4[2] << 8 | buffer4[3]);
+                stream.readRawData((char*)buffer, 4);
+                output.setNum(buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]);
                 analysisTab->setItem(AnalysisTableRow::IMG_HEIGHT, 1, new QTableWidgetItem(output));
 
-                unsigned char buffer1[1];
-
-                stream.readRawData((char*)buffer1, 1);
-                output.setNum(buffer1[0]);
+                stream.readRawData((char*)buffer, 1);
+                output.setNum(buffer[0]);
                 output += "-bit";
                 analysisTab->setItem(AnalysisTableRow::IMG_BITDEPTH, 1, new QTableWidgetItem(output));
 
 
-                stream.readRawData((char*)buffer1, 1);
-                analysisTab->setItem(AnalysisTableRow::IMG_COLOR_TYPE, 1, new QTableWidgetItem(pngColorTypeTable[buffer1[0]]));
+                stream.readRawData((char*)buffer, 1);
+                analysisTab->setItem(AnalysisTableRow::IMG_COLOR_TYPE, 1, new QTableWidgetItem(pngColorTypeTable[buffer[0]]));
 
-                stream.readRawData((char*)buffer1, 1);
-                output.setNum(buffer1[0]);
+                stream.readRawData((char*)buffer, 1);
+                output.setNum(buffer[0]);
                 analysisTab->setItem(AnalysisTableRow::IMG_COMPRESSION, 1, new QTableWidgetItem(output));
 
-                stream.readRawData((char*)buffer1, 1);
-                output.setNum(buffer1[0]);
+                stream.readRawData((char*)buffer, 1);
+                output.setNum(buffer[0]);
                 analysisTab->setItem(AnalysisTableRow::IMG_FILTER_METHOD, 1, new QTableWidgetItem(output));
 
-                stream.readRawData((char*)buffer1, 1);
-                output = (buffer1[0] == 0 ? "No Interlace" : "Adam7 Interlace");
+                stream.readRawData((char*)buffer, 1);
+                output = (buffer[0] == 0 ? "No Interlace" : "Adam7 Interlace");
                 analysisTab->setItem(AnalysisTableRow::IMG_INTERLACE_METHOD, 1, new QTableWidgetItem(output));
-            } // FF D8 FF E0 00 10 4A 46 49 46 00
+            } else {
+                analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("Unknown"));
+            }
 
+        } else if (samelengthcmp(buffer, new unsigned char[4]{0xff, 0xd8, 0xff, 0xe0}, 4)) {
+            stream.readRawData((char*)buffer, 7);
+            if (samelengthcmp(buffer, new unsigned char[7]{0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00}, 7)) {
+                analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("JPEG Image"));
+
+                stream.readRawData((char*)buffer, 1);
+                output.setNum(buffer[0]);
+                output += ".";
+                QString temp("");
+                stream.readRawData((char*)buffer, 1);
+                temp.setNum(buffer[0]);
+                temp = temp.rightJustified(2, '0');
+                output += temp;
+                analysisTab->setItem(AnalysisTableRow::JPEG_EXTRACT_VERSION, 1, new QTableWidgetItem(output));
+            } else {
+                analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("Unknown"));
+            }
         } else {
             analysisTab->setItem(AnalysisTableRow::FILETYPE, 1, new QTableWidgetItem("Unknown"));
         }

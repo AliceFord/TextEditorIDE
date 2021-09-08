@@ -19,6 +19,7 @@ private:
     enum AnalysisTableRow {
         FILETYPE,
         ZIP_EXTRACT_VERSION,
+        JPEG_EXTRACT_VERSION,
         GENERAL_BIT_FLAG,
         ZIP_COMPRESSION_METHOD,
         LAST_MODIFICATION,
